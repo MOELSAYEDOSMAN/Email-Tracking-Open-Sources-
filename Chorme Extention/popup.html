@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mail Tracker Admin</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="app__header">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <div class="brand">
+          <h1 class="brand__title">Mail Tracker</h1>
+          <p class="brand__subtitle" id="brand-subtitle">Not configured</p>
+        </div>
+        <span class="badge" id="config-badge">Setup required</span>
+      </header>
+
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button
+          class="tab tab--active"
+          id="tab-settings"
+          data-tab="settings"
+          role="tab"
+          type="button"
+          aria-selected="true"
+          aria-controls="panel-settings"
+        >
+          Settings
+        </button>
+        <button
+          class="tab"
+          id="tab-mails"
+          data-tab="mails"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="panel-mails"
+        >
+          All Mails
+        </button>
+        <button
+          class="tab"
+          id="tab-compose"
+          data-tab="compose"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="panel-compose"
+        >
+          New Mail
+        </button>
+      </nav>
+
+      <main class="panels">
+        <!-- 1) Settings ------------------------------------------------------ -->
+        <section class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
+          <p class="note" id="lock-hint" hidden>
+            Save the API base URL and your email to local storage to unlock the other tabs.
+          </p>
+
+          <form id="settings-form" novalidate autocomplete="off">
+            <div class="field">
+              <label class="field__label" for="input-base-url">API base URL</label>
+              <input
+                class="input"
+                id="input-base-url"
+                type="url"
+                placeholder="https://mail-api.example.com"
+                spellcheck="false"
+              />
+              <p class="field__error" id="error-base-url" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="input-email">Email</label>
+              <input
+                class="input"
+                id="input-email"
+                type="email"
+                placeholder="you@example.com"
+                spellcheck="false"
+              />
+              <p class="field__error" id="error-email" hidden></p>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn--primary" type="submit" id="btn-save-settings">Save settings</button>
+              <button class="btn" type="button" id="btn-clear-settings">Clear</button>
+            </div>
+
+            <p class="status" id="settings-status" role="status"></p>
+          </form>
+
+          <dl class="meta">
+            <div><dt>Get all mails</dt><dd id="meta-get"></dd></div>
+            <div><dt>Insert mail</dt><dd id="meta-post"></dd></div>
+            <div><dt>Email sent as</dt><dd id="meta-email-header"></dd></div>
+          </dl>
+        </section>
+
+        <!-- 2) All mails ----------------------------------------------------- -->
+        <section class="panel" id="panel-mails" role="tabpanel" aria-labelledby="tab-mails" hidden>
+          <div class="toolbar">
+            <button class="btn btn--primary btn--sm" type="button" id="btn-refresh-mails">Refresh</button>
+            <span class="toolbar__meta" id="mails-count"></span>
+          </div>
+          <p class="status" id="mails-status" role="status"></p>
+          <div class="mail-list" id="mails-list"></div>
+        </section>
+
+        <!-- 3) New mail ------------------------------------------------------ -->
+        <section class="panel" id="panel-compose" role="tabpanel" aria-labelledby="tab-compose" hidden>
+          <form id="compose-form" novalidate autocomplete="off">
+            <div class="field">
+              <label class="field__label" for="input-recipient">To <span class="req">*</span></label>
+              <div class="chip-input" id="chip-input">
+                <div class="chips" id="recipient-chips"></div>
+                <input
+                  class="chip-input__field"
+                  id="input-recipient"
+                  type="email"
+                  placeholder="name@example.com"
+                  spellcheck="false"
+                />
+              </div>
+              <div class="actions actions--tight">
+                <button class="btn btn--sm" type="button" id="btn-add-recipient">Add recipient</button>
+                <span class="hint">Enter, comma or semicolon also adds</span>
+              </div>
+              <p class="field__error" id="error-to" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="input-subject">Sbject <span class="req">*</span></label>
+              <input class="input" id="input-subject" type="text" placeholder="Email subject" />
+              <p class="field__error" id="error-subject" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="input-template">Templete <span class="req">*</span></label>
+              <textarea
+                class="input input--area"
+                id="input-template"
+                rows="8"
+                spellcheck="false"
+                placeholder="&lt;h1&gt;Hello&lt;/h1&gt;&#10;&lt;p&gt;Write the email template here.&lt;/p&gt;"
+              ></textarea>
+              <p class="field__error" id="error-template" hidden></p>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn--primary" type="submit" id="btn-send-mail">Insert mail</button>
+              <button class="btn" type="button" id="btn-reset-compose">Reset</button>
+            </div>
+
+            <p class="status" id="compose-status" role="status"></p>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

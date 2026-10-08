@@ -1,0 +1,78 @@
+# Email Tracking - API + MongoDB for local development and small self-hosted use.
+#
+#   cp .env.example .env      # then edit the SMTP values
+#   docker compose up --build
+#
+# API   -> http://localhost:5099
+# Mongo -> mongodb://admin:admin@localhost:27017/EmailTrackingAPI?authSource=admin
+#
+# `docker compose config` validates this file without starting anything.
+
+name: email-tracking
+
+services:
+  # ---------------------------------------------------------------------------
+  # MongoDB - the only store the API uses.
+  # ---------------------------------------------------------------------------
+  mongo:
+    image: mongo:7
+    container_name: emailtracking-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-EmailTrackingAPI}
+    ports:
+      # Exposed so you can point MongoDB Compass / mongosh at it from the host.
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # `ping` does not require authentication, so this works with auth enabled.
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - email-tracking
+
+  # ---------------------------------------------------------------------------
+  # ASP.NET Core 9 Web API.
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./Api/EmailTracking.API
+      dockerfile: Dockerfile
+    image: emailtracking-api:latest
+    container_name: emailtracking-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+
+      # `__` is the ASP.NET Core separator for nested configuration keys,
+      # so these override the matching entries in appsettings.json.
+      ConnectionStrings__DefaultConnection: >-
+        mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin}@mongo:27017/${MONGO_DATABASE:-EmailTrackingAPI}?authSource=admin
+      EmailSetting__SmtpServer: ${SMTP_SERVER:-smtp.gmail.com}
+      EmailSetting__SmtpPort: ${SMTP_PORT:-587}
+      EmailSetting__SmtpUser: ${SMTP_USER}
+      EmailSetting__SmtpPassword: ${SMTP_PASSWORD}
+      EmailSetting__SenderEmail: ${SMTP_SENDER_EMAIL}
+    ports:
+      - "${API_PORT:-5099}:8080"
+    networks:
+      - email-tracking
+
+networks:
+  email-tracking:
+    driver: bridge
+
+volumes:
+  # Named volume, so `docker compose down` keeps your tracked mails.
+  # Use `docker compose down -v` to wipe the database.
+  mongo-data:

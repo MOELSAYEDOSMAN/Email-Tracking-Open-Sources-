@@ -1,0 +1,132 @@
+# ---------------------------------------------------------------------------
+# Email Tracking - repository ignore rules
+#
+# Covers: .NET 9 / ASP.NET Core build output, Visual Studio + Rider state,
+# local secrets, Docker/MongoDB data and OS junk.
+# ---------------------------------------------------------------------------
+
+# ------------------------------- .NET build output --------------------------
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+build/
+artifacts/
+[Ll]og/
+[Ll]ogs/
+*.binlog
+*.tlog
+project.lock.json
+project.fragment.lock.json
+*.nupkg
+*.snupkg
+# Generated static-web-asset manifests (rewritten by every build)
+*.staticwebassets.endpoints.json
+*.staticwebassets.runtime.json
+
+# ------------------------------- Visual Studio / Rider ----------------------
+.vs/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+# Project-specific user files (e.g. EmailTracking.API.csproj.user)
+*.csproj.user
+*.rsuser
+*.DotSettings.user
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.svclog
+*.psess
+*.vsp
+*.vspx
+
+# ------------------------------- Secrets / local configuration -------------
+# appsettings.json stays committed as the shared shape, but no file holding
+# real credentials may be. See appsettings.Example.json.
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+appsettings.Production.json
+secrets.json
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.key
+*.pem
+
+# ------------------------------- Chrome extension packaging ----------------
+# Load the extension unpacked from source; packaged artifacts are build output.
+# Lock files are intentionally NOT ignored - commit them if you add a
+# package.json later.
+*.zip
+*.crx
+*.pem.crx
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.eslintcache
+coverage/
+
+# ------------------------------- Docker / MongoDB data ----------------------
+# Only relevant if you switch docker-compose from the named volume to a bind
+# mount inside the repository.
+data/
+mongo-data/
+docker-data/
+mongodump-*/
+dump/
+*.bson
+
+# ------------------------------- OS junk -----------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+
+# ------------------------------- Temp / scratch -----------------------------
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*~
+*.swp
+*.swo
+*.log
+*.pid
+*.seed
+tmp/
+temp/
+scratch/
+
+# ------------------------------- DSH sandbox recovery artifacts -------------
+# Written by the DSH Windows sandbox permission helper on this machine only:
+# local state, not project source.
+acl-recovery/

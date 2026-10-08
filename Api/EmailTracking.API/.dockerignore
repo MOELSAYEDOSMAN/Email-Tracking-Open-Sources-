@@ -1,0 +1,46 @@
+# Build context exclusions for the API image.
+# Without these, a local bin/obj (Windows-x64) would be copied into a
+# Linux container and can break the publish step.
+
+# Note: unlike .gitignore, a pattern with no "/" in .dockerignore matches only
+# at the context root. Both forms are listed, because the context root IS this
+# project folder - copying a Windows-built obj/project.assets.json over the
+# container's own restore output is exactly what breaks the publish step.
+bin/
+obj/
+out/
+publish/
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# IDE and editor state
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.csproj.user
+
+# Local secrets - never bake credentials into an image layer
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+appsettings.Production.json
+secrets.json
+.env
+.env.*
+
+# Tests, docs, source-control and container files themselves
+**/*.md
+**/*.http
+.git/
+.gitignore
+**/Dockerfile*
+**/.dockerignore
+
+# OS junk
+.DS_Store
+Thumbs.db
+*.log
