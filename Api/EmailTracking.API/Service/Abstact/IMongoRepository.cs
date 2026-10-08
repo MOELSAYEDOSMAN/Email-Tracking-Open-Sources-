@@ -1,4 +1,5 @@
 ﻿using EmailTracking.API.Model;
+using MongoDB.Driver;
 using System.Linq.Expressions;
 
 namespace EmailTracking.API.Service.Abstact
@@ -9,20 +10,18 @@ namespace EmailTracking.API.Service.Abstact
 
         Task<IEnumerable<T>> GetAllAsync();
 
-        Task<IEnumerable<T>> FindAsync(
-            Expression<Func<T, bool>> filter);
+        Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> filter);
 
         Task InsertAsync(T entity);
 
         Task InsertManyAsync(IEnumerable<T> entities);
 
-        Task UpdateAsync(
-            string id,
-            T entity);
+        Task UpdateAsync(string id,T entity);
 
         Task DeleteAsync(string id);
 
-        Task<bool> ExistsAsync(
-            Expression<Func<T, bool>> filter);
+        Task<bool> ExistsAsync(Expression<Func<T, bool>> filter);
+
+        IMongoCollection<T> DbContext();
     }
 }

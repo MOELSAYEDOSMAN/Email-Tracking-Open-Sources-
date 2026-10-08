@@ -1,6 +1,7 @@
 ﻿using EmailTracking.API.DbContextConfiguration;
 using EmailTracking.API.Model;
 using EmailTracking.API.Service.Abstact;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Linq.Expressions;
 
@@ -17,7 +18,7 @@ namespace EmailTracking.API.Service
 
         public async Task<T?> GetByIdAsync(string id)
         {
-            var filter = Builders<T>.Filter.Eq("_id", id);
+            var filter = Builders<T>.Filter.Eq("_id", new ObjectId(id));
 
             return await _collection
                 .Find(filter)
@@ -31,11 +32,9 @@ namespace EmailTracking.API.Service
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<T>> FindAsync(
-            Expression<Func<T, bool>> filter)
+        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> filter)
         {
-            return await _collection
-                .Find(filter)
+            return await _collection.Find(filter)
                 .ToListAsync();
         }
 
@@ -50,11 +49,9 @@ namespace EmailTracking.API.Service
             await _collection.InsertManyAsync(entities);
         }
 
-        public async Task UpdateAsync(
-            string id,
-            T entity)
+        public async Task UpdateAsync(string id,T entity)
         {
-            var filter = Builders<T>.Filter.Eq("_id", id);
+            var filter = Builders<T>.Filter.Eq("_id", new ObjectId(id));
 
             await _collection.ReplaceOneAsync(
                 filter,
@@ -63,17 +60,19 @@ namespace EmailTracking.API.Service
 
         public async Task DeleteAsync(string id)
         {
-            var filter = Builders<T>.Filter.Eq("_id", id);
+            var filter = Builders<T>.Filter.Eq("_id", new ObjectId(id));
 
             await _collection.DeleteOneAsync(filter);
         }
 
-        public async Task<bool> ExistsAsync(
-            Expression<Func<T, bool>> filter)
+        public async Task<bool> ExistsAsync(Expression<Func<T, bool>> filter)
         {
             return await _collection
                 .Find(filter)
                 .AnyAsync();
         }
+
+        public IMongoCollection<T> DbContext()
+            => _collection;
     }
 }

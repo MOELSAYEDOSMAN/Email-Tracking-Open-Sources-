@@ -15,13 +15,19 @@ namespace EmailTracking.API.Controllers
             return Ok(await mailService.CreateMail(mail));
         }
 
-        [HttpGet("Read/{mailId}")]
-        public async Task<IActionResult> UpdateReadStatus(string mailId)
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllMails()
         {
-            await mailService.UpdateReadStatus(mailId);
-            return File(
-          TrackingPixel,
-          "image/gif");
+            return Ok(await mailService.GetLastMailAsync());
+        }
+
+        [HttpGet("Read/{mailId}/{email}")]
+        public async Task<IActionResult> UpdateReadStatus(string mailId, string email)
+        {
+            await mailService.UpdateReadStatus(mailId, email);
+
+            return File(TrackingPixel,"image/gif");
         }
 
         private static readonly byte[] TrackingPixel =

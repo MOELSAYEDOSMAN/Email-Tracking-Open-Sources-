@@ -1,56 +1,14 @@
 /**
- * Helpers that turn an unknown mail DTO into DOM. Nothing here trusts the
- * payload: every value is written through textContent, and HTML previews run
- * inside a fully sandboxed iframe.
+ * Renders mail DTOs (GetMailVM) into DOM. Every value is written through
+ * textContent, and HTML previews run inside a fully sandboxed iframe.
+ *
+ * GetMailVM          { id, subject, to: GetMailRecipientVM[], from, createdAt, templete }
+ * GetMailRecipientVM { email, status, readOn }
+ *
+ * ASP.NET Core serializes to camelCase by default; PascalCase is also accepted.
  */
 
-const SUBJECT_KEYS = ['Sbject', 'sbject', 'Subject', 'subject', 'Title', 'title', 'Name', 'name'];
-const TO_KEYS = ['To', 'to', 'ToEmails', 'toEmails', 'Recipients', 'recipients', 'Emails', 'emails'];
-const FROM_KEYS = ['From', 'from', 'Sender', 'sender', 'FromEmail', 'fromEmail'];
-const DATE_KEYS = [
-  'CreatedAt',
-  'createdAt',
-  'CreatedDate',
-  'createdDate',
-  'SentAt',
-  'sentAt',
-  'Date',
-  'date',
-  'InsertDate',
-  'insertDate',
-];
-const BODY_KEYS = ['Templete', 'templete', 'Template', 'template', 'Body', 'body', 'Html', 'html', 'Content', 'content'];
-const ID_KEYS = ['Id', 'id', 'MailId', 'mailId', 'TrackingId', 'trackingId'];
-
-function readField(source, keys) {
-  if (!source || typeof source !== 'object') return undefined;
-
-  for (const key of keys) {
-    const value = source[key];
-    if (value !== undefined && value !== null && value !== '') return value;
-  }
-
-  return undefined;
-}
-
-function stringifyValue(value) {
-  if (value === undefined || value === null) return '';
-
-  if (Array.isArray(value)) {
-    return value.map((item) => stringifyValue(item)).filter(Boolean).join(', ');
-  }
-
-  if (typeof value === 'object') {
-    const nested = readField(item0(value), ['To', 'to', 'Email', 'email', 'Address', 'address', 'Name', 'name']);
-    return nested !== undefined ? stringifyValue(nested) : JSON.stringify(value);
-  }
-
-  return String(value);
-}
-
-function item0(value) {
-  return Array.isArray(value) ? value[0] : value;
-}
+const pick = (obj, name) => obj?.[name] ?? obj?.[name[0].toUpperCase() + name.slice(1)];
 
 export function stripHtml(value) {
   return String(value ?? '')
@@ -70,15 +28,12 @@ export function stripHtml(value) {
     .trim();
 }
 
-function looksLikeHtml(value) {
-  return /<\/?[a-z][\s\S]*>/i.test(String(value ?? ''));
-}
+const looksLikeHtml = (value) => /<\/?[a-z][\s\S]*>/i.test(String(value ?? ''));
 
 function formatDate(value) {
-  const raw = stringifyValue(value);
-  if (!raw) return '';
-  const parsed = new Date(raw);
-  return Number.isNaN(parsed.getTime()) ? raw : parsed.toLocaleString();
+  if (!value) return '';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
 }
 
 function row(label, value) {
@@ -87,43 +42,68 @@ function row(label, value) {
 
   const bold = document.createElement('b');
   bold.textContent = `${label}: `;
-  line.appendChild(bold);
-  line.appendChild(document.createTextNode(value));
+  line.append(bold, document.createTextNode(value));
 
   return line;
 }
 
-/** Builds one mail card. */
+function recipientsTable(recipients) {
+  const table = document.createElement('table');
+  table.className = 'mail__recipients table table-sm'; // drop "table table-sm" if you don't use Bootstrap
+
+  const head = table.createTHead().insertRow();
+  for (const label of ['Email', 'Status', 'Read On']) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.textContent = label;
+    head.appendChild(th);
+  }
+
+  const bodyEl = table.createTBody();
+  for (const recipient of recipients) {
+    const tr = bodyEl.insertRow();
+    tr.insertCell().textContent = pick(recipient, 'email') ?? '';
+    tr.insertCell().textContent = pick(recipient, 'status') ?? '';
+    tr.insertCell().textContent = formatDate(pick(recipient, 'readOn')) || '—';
+  }
+
+  return table;
+}
+
+/** Builds one mail card from a GetMailVM. */
 export function createMailCard(mail, index) {
   const card = document.createElement('article');
   card.className = 'mail';
 
-  const id = stringifyValue(readField(mail, ID_KEYS));
-  const subject = stringifyValue(readField(mail, SUBJECT_KEYS)) || `Mail #${index + 1}`;
-  const to = stringifyValue(readField(mail, TO_KEYS));
-  const from = stringifyValue(readField(mail, FROM_KEYS));
-  const date = formatDate(readField(mail, DATE_KEYS));
-  const body = stringifyValue(readField(mail, BODY_KEYS));
+  const id = pick(mail, 'id');
+  const subject = pick(mail, 'subject') || `Mail #${index + 1}`;
+  const recipients = pick(mail, 'to') ?? [];
+  const from = pick(mail, 'from');
+  const createdAt = formatDate(pick(mail, 'createdAt'));
+  const body = pick(mail, 'templete');
 
   const title = document.createElement('h3');
   title.className = 'mail__subject';
   title.textContent = subject;
   card.appendChild(title);
 
-  if (to) card.appendChild(row('To', to));
+if (recipients.length) {
+  const label = document.createElement('p');
+  label.className = 'mail__row';
+  label.innerHTML = '<b>To:</b>';
+  card.append(label, recipientsTable(recipients));
+}
   if (from) card.appendChild(row('From', from));
-  if (date) card.appendChild(row('Date', date));
+  if (createdAt) card.appendChild(row('Created', createdAt));
   if (id) card.appendChild(row('Id', id));
 
   if (body) {
     const actions = document.createElement('div');
     actions.className = 'mail__actions';
 
-    const text = stripHtml(body);
-    const isHtml = looksLikeHtml(body);
+    if (looksLikeHtml(body)) {
+      let frame = null;
 
-    let frame = null;
-    if (isHtml) {
       const previewBtn = document.createElement('button');
       previewBtn.type = 'button';
       previewBtn.className = 'btn btn--sm';
@@ -154,7 +134,7 @@ export function createMailCard(mail, index) {
     summary.textContent = 'Templete';
     const pre = document.createElement('pre');
     pre.className = 'mail__body';
-    pre.textContent = text || body;
+    pre.textContent = stripHtml(body) || body;
     details.append(summary, pre);
     card.appendChild(details);
   }

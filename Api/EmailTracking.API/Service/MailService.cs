@@ -2,45 +2,61 @@
 using EmailTracking.API.Model;
 using EmailTracking.API.Service.Abstact;
 using EmailTracking.API.VM;
+using MongoDB.Driver;
 
 namespace EmailTracking.API.Service
 {
-    public class MailService(IMongoRepository<MailTracking> context , IHttpContextAccessor httpContext, SmtpMailService smtpMailService)
+    public class MailService(IMongoRepository<MailTracking> context, IHttpContextAccessor httpContext, SmtpMailService smtpMailService,IConfiguration configuration)
     {
 
         public async Task<bool> CreateMail(AddMailVM newMial)
         {
-            
+
             var data = newMial.IClone();
-            data = data.UpdateTemplete(data.Templete.AddSecrectTempelete($"{httpContext.HttpContext.Request.Scheme}://{httpContext.HttpContext.Request.Host.Value}", data.Id));
+            data = data
+                .UpdateFrom(configuration["EmailSetting:SmtpUser"]??"Me")
+                .UpdateTemplete(data.Templete.AddSecrectTempelete($"{httpContext.HttpContext.Request.Scheme}://{httpContext.HttpContext.Request.Host.Value}", data.Id));
+           
             await context.InsertAsync(data);
+            
             foreach (var to in data.To)
             {
-                await smtpMailService.SendEmailAsync(to,newMial.Sbject, data.Templete);
+                await smtpMailService.SendEmailAsync(to, newMial.Sbject, data.Templete.ReplaceSecrectTempelete(to));
             }
 
             return true;
         }
 
 
-        public async Task UpdateReadStatus(string mailId)
+        public async Task UpdateReadStatus(string mailId, string email)
         {
             var data = await context.GetByIdAsync(mailId);
-            var email = "";
             if (data != null)
             {
-
-
-                var to = data.To.FirstOrDefault(x => x == email);
+                var to = data.To.FirstOrDefault(t => t == email);
                 if (to != null)
                 {
-                    data.ReadMails = data.ReadMails.Append(new ReadMail() { To = email, Status = Enum.MailTrackingStauts.Opened });
+
+                    if (data.ReadMails.FirstOrDefault(r => r.To == email) != null)
+                    {
+                        data.ReadMails.FirstOrDefault(r => r.To == email).UpdateStuats(Enum.MailTrackingStauts.Opened);
+                    }
+                    else
+                    {
+                       data.ReadMails.Add(new ReadMail() { To = email, Status = Enum.MailTrackingStauts.Delivered });
+                    }
+
                     await context.UpdateAsync(data.Id, data);
                 }
             }
         }
 
 
+        public async Task<IEnumerable<GetMailVM>> GetLastMailAsync()
+        {
+            var data = await context.DbContext().Find(x => !x.IsDeleted).SortByDescending(x => x.CreatedOn).ToListAsync();
+            return data.Select(d => d.IClone()).ToList();
+        }
 
     }
 }

@@ -1,9 +1,11 @@
 ﻿using EmailTracking.API.Enum;
+using EmailTracking.API.Service.Abstact;
+using EmailTracking.API.VM;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace EmailTracking.API.Model
 {
-    public class MailTracking:BaseEntity
+    public class MailTracking:BaseEntity,IPrototype<GetMailVM>
     {
         [BsonElement(nameof(From)), BsonRepresentation(MongoDB.Bson.BsonType.String)]
         public string From { get; set; }
@@ -20,8 +22,31 @@ namespace EmailTracking.API.Model
         public string Templete { get; set; }
 
         [BsonElement(nameof(ReadMails))]
-        public IEnumerable<ReadMail> ReadMails { get; set; } = new List<ReadMail>();
+        public List<ReadMail> ReadMails { get; set; } = new List<ReadMail>();
 
+        public GetMailVM IClone()
+        {
+            return new GetMailVM
+            {
+                Id = this.Id,
+                From = this.From,
+                To = this.ReadMails.Select(r=>r.IClone()).ToList(),
+                Subject = this.Subject,
+                Templete = this.Templete,
+                CreatedAt = this.CreatedOn
+            };
+        }
+        public MailTracking UpdateStatus(MailTrackingStauts newStatus)
+        {
+            this.Stauts = newStatus;
+            return this;
+        }
+
+        public MailTracking UpdateFrom(string from)
+        {
+            this.From = from;
+            return this;
+        }
 
         public MailTracking UpdateTemplete(string newTemplete)
         {

@@ -33,8 +33,15 @@ namespace EmailTracking.API.Model
         public BaseEntity()
         {
             this.CreatedOn = DateTime.UtcNow;
+            this.MofiyOn = DateTime.UtcNow;
             this.IsDeleted = false;
             this.Id = ObjectId.GenerateNewId().ToString();
+        }
+
+        public BaseEntity UpdateAlert()
+        {
+            this.MofiyOn = DateTime.UtcNow;
+            return this;
         }
     }
 }
