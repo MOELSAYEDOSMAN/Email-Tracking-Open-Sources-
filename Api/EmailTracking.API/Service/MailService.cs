@@ -14,14 +14,19 @@ namespace EmailTracking.API.Service
 
             var data = newMial.IClone();
             data = data
-                .UpdateFrom(configuration["EmailSetting:SmtpUser"]??"Me")
-                .UpdateTemplete(data.Templete.AddSecrectTempelete($"{httpContext.HttpContext.Request.Scheme}://{httpContext.HttpContext.Request.Host.Value}", data.Id));
+                .UpdateFrom(configuration["EmailSetting:SmtpUser"]??"Me");
            
             await context.InsertAsync(data);
-            
+
+            string template = data.Templete
+                .AddSecrectTempelete($"{httpContext.HttpContext.Request.Scheme}://{httpContext.HttpContext.Request.Host.Value}", data.Id);
+                
+
+
             foreach (var to in data.To)
             {
-                await smtpMailService.SendEmailAsync(to, newMial.Sbject, data.Templete.ReplaceSecrectTempelete(to));
+
+                await smtpMailService.SendEmailAsync(to, newMial.Sbject,template.ReplaceSecrectTempelete(to));
             }
 
             return true;
